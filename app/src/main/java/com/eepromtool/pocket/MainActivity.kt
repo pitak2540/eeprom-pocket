@@ -479,7 +479,7 @@ class MainActivity : AppCompatActivity() {
         if (buffer.isEmpty()) { tvBufInfo.text = "บัฟเฟอร์ว่าง"; return }
         var sum = 0L
         for (b in buffer) sum += (b.toInt() and 0xFF)
-        tvBufInfo.text = "ขนาด: ${buffer.size} ไบต์ (${fmtSize(buffer.size)})\nCRC32: ${crc(buffer)}  SUM: %04X\nที่มา: $bufferSource".format(sum and 0xFFFF)
+        tvBufInfo.text = "ขนาด: ${buffer.size} ไบต์ (${fmtSize(buffer.size)})\nCRC32: ${crc(buffer)}  SUM: ${"%04X".format(sum and 0xFFFF)}\nที่มา: $bufferSource"
     }
 
     private fun suggestName(): String {
