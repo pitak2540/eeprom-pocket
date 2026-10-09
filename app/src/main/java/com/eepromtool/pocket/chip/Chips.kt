@@ -237,7 +237,7 @@ class SpiFlash(private val bus: SpiBus, sizeHint: Int) : ChipOps {
         }
     }
 
-    fun jedec(): ByteArray = bus.spi(byteArrayOf(0x9F), 3)
+    fun jedec(): ByteArray = bus.spi(byteArrayOf(0x9F.toByte()), 3)
 
     override fun detect(): String {
         val id = jedec()
