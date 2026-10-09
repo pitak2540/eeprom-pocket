@@ -1,7 +1,10 @@
 name: Build APK
 on:
   push:
+    branches: [main]
   workflow_dispatch:
+permissions:
+  contents: write
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -15,10 +18,26 @@ jobs:
         with:
           gradle-version: '8.9'
       - name: Build
-        run: gradle assembleRelease --stacktrace --no-daemon
-      - name: Rename APK
-        run: cp app/build/outputs/apk/release/app-release.apk EepromPocket.apk
+        run: |
+          set -o pipefail
+          gradle assembleRelease --no-daemon 2>&1 | tee build.log
+      - name: Publish APK to apk branch
+        if: success()
+        run: |
+          mkdir -p /tmp/out && cp app/build/outputs/apk/release/app-release.apk /tmp/out/EepromPocket.apk
+          cp build.log /tmp/out/build.log
+          cd /tmp/out && git init -q -b apk && git add -A
+          git -c user.name=ci -c user.email=ci@local commit -qm "APK ${GITHUB_SHA}"
+          git push -f "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${GITHUB_REPOSITORY}" apk
+      - name: Publish log on failure
+        if: failure()
+        run: |
+          mkdir -p /tmp/out && cp build.log /tmp/out/build.log || echo "no log" > /tmp/out/build.log
+          cd /tmp/out && git init -q -b ci-log && git add -A
+          git -c user.name=ci -c user.email=ci@local commit -qm "log ${GITHUB_SHA}"
+          git push -f "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${GITHUB_REPOSITORY}" ci-log
       - uses: actions/upload-artifact@v4
+        if: success()
         with:
           name: EepromPocket-apk
-          path: EepromPocket.apk
+          path: app/build/outputs/apk/release/app-release.apk
