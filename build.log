@@ -1,0 +1,62 @@
+To honour the JVM settings for this build a single-use Daemon process will be forked. For more on this, please refer to https://docs.gradle.org/8.9/userguide/gradle_daemon.html#sec:disabling_the_daemon in the Gradle documentation.
+Daemon will be stopped at the end of the build 
+> Task :app:preBuild UP-TO-DATE
+> Task :app:preReleaseBuild UP-TO-DATE
+> Task :app:mergeReleaseJniLibFolders
+> Task :app:mergeReleaseNativeLibs NO-SOURCE
+> Task :app:stripReleaseDebugSymbols NO-SOURCE
+> Task :app:extractReleaseNativeSymbolTables NO-SOURCE
+> Task :app:mergeReleaseNativeDebugMetadata NO-SOURCE
+> Task :app:checkReleaseDuplicateClasses
+> Task :app:buildKotlinToolingMetadata
+> Task :app:checkKotlinGradlePluginConfigurationErrors
+> Task :app:generateReleaseResValues
+> Task :app:checkReleaseAarMetadata
+> Task :app:mapReleaseSourceSetPaths
+> Task :app:generateReleaseResources
+> Task :app:packageReleaseResources
+> Task :app:mergeReleaseResources
+> Task :app:createReleaseCompatibleScreenManifests
+> Task :app:extractDeepLinksRelease
+> Task :app:parseReleaseLocalResources
+> Task :app:processReleaseMainManifest
+> Task :app:processReleaseManifest
+> Task :app:javaPreCompileRelease
+> Task :app:desugarReleaseFileDependencies
+> Task :app:mergeReleaseStartupProfile
+> Task :app:mergeReleaseArtProfile
+> Task :app:mergeReleaseShaders
+> Task :app:compileReleaseShaders NO-SOURCE
+> Task :app:generateReleaseAssets UP-TO-DATE
+> Task :app:mergeReleaseAssets
+> Task :app:compressReleaseAssets
+> Task :app:processReleaseManifestForPackage
+> Task :app:extractReleaseVersionControlInfo
+> Task :app:collectReleaseDependencies
+> Task :app:sdkReleaseDependencyData
+> Task :app:validateSigningRelease
+> Task :app:writeReleaseAppMetadata
+> Task :app:writeReleaseSigningConfigVersions
+> Task :app:processReleaseResources
+> Task :app:optimizeReleaseResources
+> Task :app:mergeExtDexRelease
+
+> Task :app:compileReleaseKotlin FAILED
+e: file:///home/runner/work/eeprom-pocket/eeprom-pocket/app/src/main/java/com/eepromtool/pocket/chip/Chips.kt:240:50 The integer literal does not conform to the expected type Byte
+gradle/actions: Writing build results to /home/runner/work/_temp/.gradle-actions/build-results/__run-1791558832008.json
+
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+Execution failed for task ':app:compileReleaseKotlin'.
+> A failure occurred while executing org.jetbrains.kotlin.compilerRunner.GradleCompilerRunnerWithWorkers$GradleKotlinCompilerWorkAction
+   > Compilation error. See log for more details
+
+* Try:
+> Run with --stacktrace option to get the stack trace.
+> Run with --info or --debug option to get more log output.
+> Run with --scan to get full insights.
+> Get more help at https://help.gradle.org.
+
+BUILD FAILED in 36s
+33 actionable tasks: 33 executed
