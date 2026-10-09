@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- CH341A programmer -->
+    <usb-device vendor-id="6790" product-id="21778" />
+    <!-- CH340 / CH341 serial -->
+    <usb-device vendor-id="6790" product-id="29987" />
+    <usb-device vendor-id="6790" product-id="21795" />
+    <!-- FTDI FT2232H / FT4232H / FT232H / FT232R / FT-X -->
+    <usb-device vendor-id="1027" product-id="24592" />
+    <usb-device vendor-id="1027" product-id="24593" />
+    <usb-device vendor-id="1027" product-id="24596" />
+    <usb-device vendor-id="1027" product-id="24577" />
+    <usb-device vendor-id="1027" product-id="24597" />
+    <!-- Arduino -->
+    <usb-device vendor-id="9025" />
+</resources>

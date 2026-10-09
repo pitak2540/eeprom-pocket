@@ -1,0 +1,327 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:fitsSystemWindows="true"
+    android:orientation="vertical">
+
+    <com.google.android.material.appbar.MaterialToolbar
+        android:id="@+id/toolbar"
+        android:layout_width="match_parent"
+        android:layout_height="?attr/actionBarSize"
+        android:background="?attr/colorPrimary"
+        app:subtitle="CH341A · FTDI · CH340"
+        app:subtitleTextColor="?attr/colorOnPrimary"
+        app:title="EEPROM Pocket"
+        app:titleTextColor="?attr/colorOnPrimary" />
+
+    <com.google.android.material.tabs.TabLayout
+        android:id="@+id/tabs"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content" />
+
+    <FrameLayout
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1">
+
+        <!-- ===== Control panel ===== -->
+        <ScrollView
+            android:id="@+id/panelControl"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="12dp">
+
+                <TextView
+                    style="@style/SectionTitle"
+                    android:text="อุปกรณ์ USB" />
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:id="@+id/tvDevice"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="ยังไม่ได้เชื่อมต่อ"
+                        android:textSize="14sp" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnConnect"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="เชื่อมต่อ" />
+                </LinearLayout>
+
+                <TextView
+                    style="@style/SectionTitle"
+                    android:text="ชนิดชิป" />
+
+                <Spinner
+                    android:id="@+id/spFamily"
+                    android:layout_width="match_parent"
+                    android:layout_height="48dp" />
+
+                <Spinner
+                    android:id="@+id/spChip"
+                    android:layout_width="match_parent"
+                    android:layout_height="48dp" />
+
+                <LinearLayout
+                    android:id="@+id/row93"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <RadioGroup
+                        android:id="@+id/rgOrg"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal">
+
+                        <RadioButton
+                            android:id="@+id/rbX8"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="x8" />
+
+                        <RadioButton
+                            android:id="@+id/rbX16"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:checked="true"
+                            android:text="x16" />
+                    </RadioGroup>
+
+                    <CheckBox
+                        android:id="@+id/cbSwap"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="12dp"
+                        android:text="สลับไบต์ (Swap)" />
+                </LinearLayout>
+
+                <CheckBox
+                    android:id="@+id/cbEraseFirst"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:checked="true"
+                    android:text="ลบชิปก่อนเขียน (Flash)" />
+
+                <CheckBox
+                    android:id="@+id/cbVerify"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:checked="true"
+                    android:text="ตรวจสอบหลังเขียน (Verify)" />
+
+                <TextView
+                    android:id="@+id/tvChipInfo"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:textSize="13sp" />
+
+                <TextView
+                    style="@style/SectionTitle"
+                    android:text="คำสั่ง" />
+
+                <GridLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:columnCount="3">
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnDetect"
+                        style="@style/OpButton"
+                        android:text="ตรวจ ID" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnRead"
+                        style="@style/OpButton"
+                        android:text="อ่าน" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnWrite"
+                        style="@style/OpButton"
+                        android:text="เขียน" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnVerify"
+                        style="@style/OpButton"
+                        android:text="ตรวจสอบ" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnErase"
+                        style="@style/OpButton"
+                        android:text="ลบ" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnBlank"
+                        style="@style/OpButton"
+                        android:text="ตรวจว่าง" />
+                </GridLayout>
+
+                <TextView
+                    style="@style/SectionTitle"
+                    android:text="ไฟล์ .bin" />
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal">
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnOpen"
+                        style="@style/Widget.Material3.Button.OutlinedButton"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginEnd="4dp"
+                        android:layout_weight="1"
+                        android:text="เปิดไฟล์" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnSave"
+                        style="@style/Widget.Material3.Button.OutlinedButton"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="4dp"
+                        android:layout_weight="1"
+                        android:text="บันทึกไฟล์" />
+                </LinearLayout>
+
+                <TextView
+                    android:id="@+id/tvBufInfo"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:fontFamily="monospace"
+                    android:text="บัฟเฟอร์ว่าง"
+                    android:textSize="13sp" />
+
+                <TextView
+                    style="@style/SectionTitle"
+                    android:text="บันทึกการทำงาน" />
+
+                <TextView
+                    android:id="@+id/tvLog"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:fontFamily="monospace"
+                    android:textIsSelectable="true"
+                    android:textSize="12sp" />
+            </LinearLayout>
+        </ScrollView>
+
+        <!-- ===== Hex panel ===== -->
+        <LinearLayout
+            android:id="@+id/panelHex"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:orientation="vertical"
+            android:visibility="gone">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:paddingHorizontal="8dp">
+
+                <EditText
+                    android:id="@+id/etGoto"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:hint="ไปที่ offset (hex) เช่น 1F0"
+                    android:importantForAutofill="no"
+                    android:inputType="textCapCharacters|textNoSuggestions"
+                    android:maxLines="1" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnGoto"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="ไป" />
+            </LinearLayout>
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:paddingHorizontal="8dp"
+                android:text="กดค้างที่บรรทัดเพื่อแก้ไขค่า"
+                android:textSize="12sp" />
+
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/rvHex"
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_weight="1"
+                android:paddingHorizontal="4dp" />
+        </LinearLayout>
+
+        <!-- ===== Help panel ===== -->
+        <ScrollView
+            android:id="@+id/panelHelp"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:visibility="gone">
+
+            <TextView
+                android:id="@+id/tvHelp"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:padding="12dp"
+                android:textIsSelectable="true"
+                android:textSize="14sp" />
+        </ScrollView>
+    </FrameLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="?attr/colorSurfaceVariant"
+        android:orientation="vertical"
+        android:paddingHorizontal="12dp"
+        android:paddingVertical="6dp">
+
+        <ProgressBar
+            android:id="@+id/progress"
+            style="?android:attr/progressBarStyleHorizontal"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:max="1000" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <TextView
+                android:id="@+id/tvStatus"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="พร้อม"
+                android:textSize="13sp" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnCancel"
+                style="@style/Widget.Material3.Button.TextButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:enabled="false"
+                android:text="ยกเลิก" />
+        </LinearLayout>
+    </LinearLayout>
+</LinearLayout>
