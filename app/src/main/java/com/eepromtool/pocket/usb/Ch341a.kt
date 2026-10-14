@@ -154,7 +154,9 @@ class Ch341a(private val link: UsbLink) : Programmer {
     }
 
     // ---------------- Microwire (bit-bang) ----------------
-    private fun mw(cs: Int, clk: Int, di: Int) = UIO_OUT or 0x16 or cs or (clk shl 3) or (di shl 5)
+    // Same pin map as IMSProg: CS = D0, SK = D3, DI = D5, DO = D7 (input). Other outputs low.
+    private fun mw(cs: Int, clk: Int, di: Int) = UIO_OUT or cs or (clk shl 3) or (di shl 5)
+    private val mwDelay = UIO_US or 2   // >= 1 us per clock phase (93xx at 2.5V needs 1 us)
 
     private fun uio(ops: IntArray): ByteArray {
         val pkts = ArrayList<Pkt>()
@@ -173,39 +175,52 @@ class Ch341a(private val link: UsbLink) : Programmer {
             pkts.add(Pkt(d, ins))
             i += n
         }
-        return run(pkts)
+        val r = run(pkts)
+        val expected = ops.count { it == UIO_IN }
+        if (r.size < expected) throw IOException("CH341A: อ่านขา DO ได้ ${r.size}/$expected")
+        return r
     }
 
+    /**
+     * CS low -> CS high, clock out [out] (data set while SK low, latched on SK rising edge),
+     * then clock in [readBits]: SK high (chip shifts next bit out), SK low, sample DO. CS low at end.
+     */
     override fun mwTransfer(out: BooleanArray, readBits: Int): ByteArray {
-        val ops = ArrayList<Int>(out.size * 2 + readBits * 5 + 8)
+        val ops = ArrayList<Int>(out.size * 4 + readBits * 5 + 12)
         ops += UIO_DIR or 0x3F
-        ops += mw(0, 0, 0); ops += mw(1, 0, 0); ops += UIO_US or 2
+        ops += mw(0, 0, 0); ops += mwDelay
+        ops += mw(1, 0, 0); ops += mwDelay
         var last = 0
         for (b in out) {
             val v = if (b) 1 else 0
-            ops += mw(1, 0, v); ops += mw(1, 1, v); last = v
+            ops += mw(1, 0, v); ops += mwDelay
+            ops += mw(1, 1, v); ops += mwDelay
+            last = v
         }
-        ops += mw(1, 0, last)
+        ops += mw(1, 0, last); ops += mwDelay
+        ops += mw(1, 0, 0)
         repeat(readBits) {
-            ops += mw(1, 1, 0); ops += UIO_US or 1
-            ops += mw(1, 0, 0); ops += UIO_US or 1
+            ops += mw(1, 1, 0); ops += mwDelay
+            ops += mw(1, 0, 0); ops += mwDelay
             ops += UIO_IN
         }
-        ops += mw(0, 0, 0)
+        ops += mw(0, 0, 0)     // CS low: starts the self-timed write/erase cycle
+        ops += mwDelay
         val r = uio(ops.toIntArray())
-        if (r.size < readBits) throw IOException("CH341A: อ่าน 93xx ได้ ${r.size}/$readBits บิต")
         return packBits(readBits) { (r[it].toInt() and 0x80) != 0 }
     }
 
+    /** After WRITE/ERASE/ERAL: CS low -> high, chip drives DO low while busy, high when ready. */
     override fun mwWaitReady(timeoutMs: Int): Boolean {
         uio(intArrayOf(UIO_DIR or 0x3F, mw(0, 0, 0), UIO_US or 5, mw(1, 0, 0), UIO_US or 5))
         val t0 = SystemClock.uptimeMillis()
         var ok = false
-        while (SystemClock.uptimeMillis() - t0 <= timeoutMs) {
+        while (true) {
             val r = uio(intArrayOf(UIO_IN))
-            if (r.isNotEmpty() && (r[0].toInt() and 0x80) != 0) { ok = true; break }
+            if ((r[0].toInt() and 0x80) != 0) { ok = true; break }
+            if (SystemClock.uptimeMillis() - t0 > timeoutMs) break
         }
-        uio(intArrayOf(mw(0, 0, 0)))
+        uio(intArrayOf(mw(0, 0, 0), mwDelay))
         return ok
     }
 

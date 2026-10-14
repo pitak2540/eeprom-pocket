@@ -325,13 +325,24 @@ class SpiFlash(private val bus: SpiBus, sizeHint: Int) : ChipOps {
 }
 
 // ======================= 93xx =======================
+/**
+ * x16 byte order in the .bin: default = low byte first (same as IMSProg / CH341A programmer software).
+ * [hiFirst] = true stores the high byte first (big-endian).
+ */
 class MicrowireEeprom(
-    private val bus: MicrowireBus, chip: Chip, private val x16: Boolean, private val swap: Boolean
+    private val bus: MicrowireBus, chip: Chip, private val x16: Boolean, private val hiFirst: Boolean
 ) : ChipOps {
     override val size = chip.size
     private val abits = if (x16) chip.extra else chip.addrBytes
     private val wordBytes = if (x16) 2 else 1
     private val words = size / wordBytes
+    private val dataBits = wordBytes * 8
+
+    /** Words that needed rewriting / were already correct in the last write() */
+    var lastWritten = 0
+        private set
+    var lastSkipped = 0
+        private set
 
     private fun cmd(op: Int, addr: Int): BooleanArray =
         bitsOf(((0b100 or op).toLong() shl abits) or addr.toLong(), 3 + abits)
@@ -339,47 +350,94 @@ class MicrowireEeprom(
     private fun ewen() = bus.mwTransfer(cmd(0b00, 0b11 shl (abits - 2)), 0)
     private fun ewds() = bus.mwTransfer(cmd(0b00, 0), 0)
 
+    private fun readWord(w: Int): Int {
+        val d = bus.mwTransfer(cmd(0b10, w), dataBits)
+        return if (x16) (d[0].u shl 8) or d[1].u else d[0].u
+    }
+
+    private fun wordFromFile(data: ByteArray, w: Int): Int = if (x16) {
+        val a = data[w * 2].u
+        val b = data[w * 2 + 1].u
+        if (hiFirst) (a shl 8) or b else (b shl 8) or a
+    } else data[w].u
+
+    private fun putWord(out: ByteArray, w: Int, v: Int) {
+        if (x16) {
+            val hi = (v shr 8).toByte()
+            val lo = v.toByte()
+            if (hiFirst) { out[w * 2] = hi; out[w * 2 + 1] = lo } else { out[w * 2] = lo; out[w * 2 + 1] = hi }
+        } else out[w] = v.toByte()
+    }
+
     override fun detect(): String {
-        val d = bus.mwTransfer(cmd(0b10, 0), wordBytes * 8)
-        return "อ่านเวิร์ดแรก: " + d.joinToString(" ") { "%02X".format(it) } +
-            "  (โหมด ${if (x16) "x16" else "x8"}, ${abits} address bits)"
+        val w0 = readWord(0)
+        val w1 = readWord(1)
+        val fmt = if (x16) "%04X" else "%02X"
+        val mask = (1 shl dataBits) - 1
+        val hint = if (w0 == w1 && (w0 == 0 || w0 == mask)) "  (ค่าเหมือนกัน — อาจไม่มีชิป, ต่อสายผิด หรือชิปว่าง)" else ""
+        return "เวิร์ด 0 = ${fmt.format(w0)}, เวิร์ด 1 = ${fmt.format(w1)}  (โหมด ${if (x16) "x16" else "x8"}, $abits address bits)$hint"
     }
 
     override fun read(p: Progress): ByteArray {
         val out = ByteArray(size)
         for (w in 0 until words) {
-            val d = bus.mwTransfer(cmd(0b10, w), wordBytes * 8)
-            if (x16) {
-                val hi = d[0]; val lo = d[1]
-                if (swap) { out[w * 2] = lo; out[w * 2 + 1] = hi } else { out[w * 2] = hi; out[w * 2 + 1] = lo }
-            } else out[w] = d[0]
+            putWord(out, w, readWord(w))
             if (w and 7 == 7 || w == words - 1) p.update(((w + 1) * wordBytes).toLong(), size.toLong())
         }
         return out
     }
 
+    private fun writeWord(w: Int, value: Int) {
+        bus.mwTransfer(cmd(0b01, w) + bitsOf(value.toLong(), dataBits), 0)
+        if (!bus.mwWaitReady(30))
+            throw IOException("ชิปไม่ตอบหลังเขียนเวิร์ด $w (DO ไม่ขึ้น HIGH) — ตรวจสาย DO และขา ORG")
+    }
+
+    /**
+     * Word by word: read current value, skip if already equal, otherwise WRITE + wait ready +
+     * read back. Retries a word up to 3 times before failing.
+     */
     override fun write(data: ByteArray, p: Progress) {
+        lastWritten = 0
+        lastSkipped = 0
         ewen()
         try {
             for (w in 0 until words) {
-                val value = if (x16) {
-                    val a = data[w * 2].u; val b = data[w * 2 + 1].u
-                    if (swap) (b shl 8) or a else (a shl 8) or b
-                } else data[w].u
-                val c = cmd(0b01, w) + bitsOf(value.toLong(), wordBytes * 8)
-                bus.mwTransfer(c, 0)
-                if (!bus.mwWaitReady(20)) throw IOException("ชิปไม่ตอบหลังเขียนเวิร์ด $w (ตรวจขา DO/ORG)")
+                val value = wordFromFile(data, w)
+                var cur = readWord(w)
+                if (cur == value) {
+                    lastSkipped++
+                } else {
+                    var tries = 0
+                    while (cur != value) {
+                        if (++tries > 3) {
+                            val f = if (x16) "%04X" else "%02X"
+                            throw IOException(
+                                "เขียนเวิร์ด $w (ไบต์ 0x%X) ไม่ติด: ต้องการ ${f.format(value)} อ่านได้ ${f.format(cur)}".format(w * wordBytes) +
+                                    " — ตรวจขา ORG ให้ตรง x8/x16, ไฟเลี้ยง และว่าชิปไม่ได้ถูกล็อก"
+                            )
+                        }
+                        if (tries > 1) ewen()
+                        writeWord(w, value)
+                        cur = readWord(w)
+                    }
+                    lastWritten++
+                }
                 p.update(((w + 1) * wordBytes).toLong(), size.toLong())
             }
-        } finally { ewds() }
+        } finally {
+            try { ewds() } catch (_: Exception) {}
+        }
     }
 
     override fun erase(p: Progress) {
         ewen()
         try {
             bus.mwTransfer(cmd(0b00, 0b10 shl (abits - 2)), 0)
-            if (!bus.mwWaitReady(100)) throw IOException("ERAL ไม่ตอบ")
-        } finally { ewds() }
+            if (!bus.mwWaitReady(100)) throw IOException("ลบทั้งชิป (ERAL) แล้วชิปไม่ตอบ")
+        } finally {
+            try { ewds() } catch (_: Exception) {}
+        }
         p.update(1, 1)
     }
 }

@@ -450,7 +450,10 @@ class MainActivity : AppCompatActivity() {
                 if (buffer.size != ops.size) ui { log("⚠ ขนาดไฟล์ ${buffer.size} ≠ ชิป ${ops.size} ไบต์ (${if (buffer.size < ops.size) "เติม FF" else "ตัดส่วนเกิน"})") }
                 phase = "เขียน"
                 ops.write(fit(buffer, ops.size), pr)
-                ui { log("✔ เขียนเสร็จ") }
+                if (ops is MicrowireEeprom) {
+                    val wr = ops.lastWritten; val sk = ops.lastSkipped
+                    ui { log("✔ เขียนเสร็จ — เขียนใหม่ $wr เวิร์ด, ค่าเดิมตรงแล้ว $sk เวิร์ด (ตรวจทีละเวิร์ดแล้ว)") }
+                } else ui { log("✔ เขียนเสร็จ") }
                 if (verifyAfter) { phase = "ตรวจสอบ"; verify(ops, pr) }
             }
         }
