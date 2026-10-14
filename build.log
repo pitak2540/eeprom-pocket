@@ -1,0 +1,142 @@
+  Determining projects to restore...
+  Restored D:\a\eeprom-pocket\eeprom-pocket\windows\EepromPocket.Win\EepromPocket.Win.csproj (in 6.55 sec).
+  EepromPocket.Win -> D:\a\eeprom-pocket\eeprom-pocket\windows\EepromPocket.Win\bin\Release\net8.0-windows\win-x86\EepromPocket.dll
+  EepromPocket.Win -> D:\a\eeprom-pocket\eeprom-pocket\publish\
+  Determining projects to restore...
+  All projects are up-to-date for restore.
+  EepromPocket.Win -> D:\a\eeprom-pocket\eeprom-pocket\windows\EepromPocket.Win\bin\Release\net8.0-windows\win-x86\EepromPocket.dll
+  EepromPocket.Win -> D:\a\eeprom-pocket\eeprom-pocket\publish-lite\
+Inno Setup 6 Command-Line Compiler
+Copyright (C) 1997-2026 Jordan Russell. All rights reserved.
+Portions Copyright (C) 2000-2026 Martijn Laan. All rights reserved.
+Portions Copyright (C) 2001-2004 Alex Yackimoff. All rights reserved.
+https://www.innosetup.com
+
+Compiler engine version: Inno Setup 6.7.1
+Non-commercial use only
+
+Preprocessing
+   Reading file: C:\Program Files (x86)\Inno Setup 6\ISPPBuiltins.iss
+Parsing [Setup] section, line 14
+Parsing [Setup] section, line 15
+Parsing [Setup] section, line 16
+Parsing [Setup] section, line 17
+Parsing [Setup] section, line 18
+Parsing [Setup] section, line 19
+Parsing [Setup] section, line 20
+Parsing [Setup] section, line 21
+Parsing [Setup] section, line 22
+Parsing [Setup] section, line 23
+Parsing [Setup] section, line 24
+Parsing [Setup] section, line 25
+Parsing [Setup] section, line 26
+Parsing [Setup] section, line 27
+Parsing [Setup] section, line 28
+Parsing [Setup] section, line 29
+Creating output directory: D:\a\eeprom-pocket\eeprom-pocket\windows\Output
+Reading file (WizardImageFile)
+Reading file (WizardSmallImageFile)
+Preparing Setup program executable
+   Verification successful
+   Updating icons (Setup.e32)
+   Updating version info (Setup.e32)
+Determining language code pages
+Parsing [Languages] section, line 32
+   Reading file: C:\Program Files (x86)\Inno Setup 6\Default.isl
+   Messages in script file
+Reading default messages from Default.isl
+Parsing [Languages] section, line 32
+   Reading file: C:\Program Files (x86)\Inno Setup 6\Default.isl
+Parsing [LangOptions], [Messages], and [CustomMessages] sections
+   Messages in script file
+Reading [Code] section
+Parsing [Tasks] section, line 35
+Parsing [Icons] section, line 43
+Parsing [Icons] section, line 44
+Parsing [Icons] section, line 45
+Parsing [Icons] section, line 46
+Parsing [Run] section, line 49
+Parsing [Files] section, line 38
+Parsing [Files] section, line 39
+Parsing [Files] section, line 40
+Creating setup files
+   Verification successful
+   Updating icons (Setup.exe)
+   Compressing: D:\a\eeprom-pocket\eeprom-pocket\windows\..\publish\EepromPocket.exe
+   Compressing: D:\a\eeprom-pocket\eeprom-pocket\windows\..\publish\EepromPocket.pdb
+   Compressing: D:\a\eeprom-pocket\eeprom-pocket\windows\..\firmware\eeprom_bridge\eeprom_bridge.ino
+   Compressing: D:\a\eeprom-pocket\eeprom-pocket\windows\README-Windows.txt
+   Compressing Setup program executable
+   Updating version info (Setup.exe)
+   Updating manifest (Setup.exe)
+
+
+Successful compile (6.781 sec). Resulting Setup program filename is:
+D:\a\eeprom-pocket\eeprom-pocket\windows\Output\EEPROMPocket-Setup-1.1.0-Full.exe
+Inno Setup 6 Command-Line Compiler
+Copyright (C) 1997-2026 Jordan Russell. All rights reserved.
+Portions Copyright (C) 2000-2026 Martijn Laan. All rights reserved.
+Portions Copyright (C) 2001-2004 Alex Yackimoff. All rights reserved.
+https://www.innosetup.com
+
+Compiler engine version: Inno Setup 6.7.1
+Non-commercial use only
+
+Preprocessing
+   Reading file: C:\Program Files (x86)\Inno Setup 6\ISPPBuiltins.iss
+Parsing [Setup] section, line 14
+Parsing [Setup] section, line 15
+Parsing [Setup] section, line 16
+Parsing [Setup] section, line 17
+Parsing [Setup] section, line 18
+Parsing [Setup] section, line 19
+Parsing [Setup] section, line 20
+Parsing [Setup] section, line 21
+Parsing [Setup] section, line 22
+Parsing [Setup] section, line 23
+Parsing [Setup] section, line 24
+Parsing [Setup] section, line 25
+Parsing [Setup] section, line 26
+Parsing [Setup] section, line 27
+Parsing [Setup] section, line 28
+Parsing [Setup] section, line 29
+Reading file (WizardImageFile)
+Reading file (WizardSmallImageFile)
+Preparing Setup program executable
+   Verification successful
+   Updating icons (Setup.e32)
+   Updating version info (Setup.e32)
+Determining language code pages
+Parsing [Languages] section, line 32
+   Reading file: C:\Program Files (x86)\Inno Setup 6\Default.isl
+   Messages in script file
+Reading default messages from Default.isl
+Parsing [Languages] section, line 32
+   Reading file: C:\Program Files (x86)\Inno Setup 6\Default.isl
+Parsing [LangOptions], [Messages], and [CustomMessages] sections
+   Messages in script file
+Reading [Code] section
+Parsing [Tasks] section, line 35
+Parsing [Icons] section, line 43
+Parsing [Icons] section, line 44
+Parsing [Icons] section, line 45
+Parsing [Icons] section, line 46
+Parsing [Run] section, line 49
+Parsing [Files] section, line 38
+Parsing [Files] section, line 39
+Parsing [Files] section, line 40
+Compiling [Code] section
+Creating setup files
+   Verification successful
+   Updating icons (Setup.exe)
+   Compressing: D:\a\eeprom-pocket\eeprom-pocket\windows\..\publish-lite\EepromPocket.exe
+   Compressing: D:\a\eeprom-pocket\eeprom-pocket\windows\..\publish-lite\EepromPocket.pdb
+   Compressing: D:\a\eeprom-pocket\eeprom-pocket\windows\..\firmware\eeprom_bridge\eeprom_bridge.ino
+   Compressing: D:\a\eeprom-pocket\eeprom-pocket\windows\README-Windows.txt
+   Compressing Setup program executable
+   Updating version info (Setup.exe)
+   Updating manifest (Setup.exe)
+
+
+Successful compile (0.453 sec). Resulting Setup program filename is:
+D:\a\eeprom-pocket\eeprom-pocket\windows\Output\EEPROMPocket-Setup-1.1.0-Lite.exe
