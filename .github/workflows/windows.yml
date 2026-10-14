@@ -19,12 +19,19 @@ jobs:
         run: |
           dotnet publish windows/EepromPocket.Win/EepromPocket.Win.csproj -c Release -r win-x86 --self-contained true -p:PublishSingleFile=true -p:EnableCompressionInSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -o publish *>&1 | Tee-Object -FilePath build.log
           if ($LASTEXITCODE -ne 0) { exit 1 }
-      - name: Build installer
+      - name: Publish exe (lite, needs .NET 8 Desktop Runtime x86)
+        shell: pwsh
+        run: |
+          dotnet publish windows/EepromPocket.Win/EepromPocket.Win.csproj -c Release -r win-x86 --self-contained false -p:PublishSingleFile=true -o publish-lite *>&1 | Tee-Object -FilePath build.log -Append
+          if ($LASTEXITCODE -ne 0) { exit 1 }
+      - name: Build installers
         shell: pwsh
         run: |
           $iscc = "C:\Program Files (x86)\Inno Setup 6\ISCC.exe"
           if (-not (Test-Path $iscc)) { choco install innosetup -y --no-progress *>&1 | Out-Null }
           & $iscc windows\installer.iss *>&1 | Tee-Object -FilePath build.log -Append
+          if ($LASTEXITCODE -ne 0) { exit 1 }
+          & $iscc /DLite windows\installer.iss *>&1 | Tee-Object -FilePath build.log -Append
           if ($LASTEXITCODE -ne 0) { exit 1 }
       - name: Publish installer to win branch
         if: success()

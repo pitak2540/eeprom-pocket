@@ -7,3 +7,4 @@ windows/**/bin/
 windows/**/obj/
 windows/Output/
 publish/
+publish-lite/
