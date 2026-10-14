@@ -3,3 +3,7 @@ build/
 local.properties
 *.iml
 .idea/
+windows/**/bin/
+windows/**/obj/
+windows/Output/
+publish/

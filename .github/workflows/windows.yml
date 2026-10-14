@@ -1,0 +1,44 @@
+name: Build Windows installer
+on:
+  push:
+    branches: [main]
+    paths: ['windows/**', 'firmware/**', '.github/workflows/windows.yml']
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Publish exe
+        shell: pwsh
+        run: |
+          dotnet publish windows/EepromPocket.Win/EepromPocket.Win.csproj -c Release -r win-x86 --self-contained true -p:PublishSingleFile=true -p:EnableCompressionInSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -o publish *>&1 | Tee-Object -FilePath build.log
+          if ($LASTEXITCODE -ne 0) { exit 1 }
+      - name: Build installer
+        shell: pwsh
+        run: |
+          $iscc = "C:\Program Files (x86)\Inno Setup 6\ISCC.exe"
+          if (-not (Test-Path $iscc)) { choco install innosetup -y --no-progress *>&1 | Out-Null }
+          & $iscc windows\installer.iss *>&1 | Tee-Object -FilePath build.log -Append
+          if ($LASTEXITCODE -ne 0) { exit 1 }
+      - name: Publish installer to win branch
+        if: success()
+        shell: bash
+        run: |
+          mkdir -p /tmp/out && cp windows/Output/*.exe /tmp/out/ && cp build.log /tmp/out/build.log
+          cd /tmp/out && git init -q -b win && git add -A
+          git -c user.name=ci -c user.email=ci@local commit -qm "Windows installer ${GITHUB_SHA}"
+          git push -f "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${GITHUB_REPOSITORY}" win
+      - name: Publish log on failure
+        if: failure()
+        shell: bash
+        run: |
+          mkdir -p /tmp/out && (cp build.log /tmp/out/build.log || echo "no log" > /tmp/out/build.log)
+          cd /tmp/out && git init -q -b ci-log-win && git add -A
+          git -c user.name=ci -c user.email=ci@local commit -qm "log ${GITHUB_SHA}"
+          git push -f "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${GITHUB_REPOSITORY}" ci-log-win

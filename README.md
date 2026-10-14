@@ -25,3 +25,7 @@
 ## Build
 GitHub Actions จะ build `EepromPocket.apk` ให้อัตโนมัติทุกครั้งที่ push (ดูที่ Actions → Artifacts)
 หรือ build เองด้วย Android Studio / `gradle assembleRelease`
+
+## Windows
+โฟลเดอร์ `windows/` เป็นโปรแกรมเวอร์ชัน Windows (C# WinForms) ใช้ไดรเวอร์ทางการ CH341PAR (`CH341DLL.DLL`), FTDI D2XX และพอร์ต COM สำหรับ Arduino Bridge
+GitHub Actions จะสร้างตัวติดตั้ง `EEPROMPocket-Setup-x.y.z.exe` ไว้ที่ branch `win`
