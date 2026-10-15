@@ -52,12 +52,14 @@ class EditActivity : AppCompatActivity() {
         if (doc.pages.isEmpty()) { finish(); return@registerForActivityResult }
         index = index.coerceIn(0, doc.pages.size - 1)
         showPage()
+        autoSaveJpg(null)
     }
     private val addPages = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
         val before = doc.pages.size
         DocStore.load(this, doc.id)?.let { doc = it }
         if (doc.pages.size > before) index = before
         showPage()
+        autoSaveJpg(null)
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -100,10 +102,34 @@ class EditActivity : AppCompatActivity() {
                 .putExtra(CropActivity.EXTRA_DOC, doc.id).putExtra(CropActivity.EXTRA_INDEX, index))
         }
         findViewById<View>(R.id.btnDelete).setOnClickListener { deletePage() }
-        findViewById<View>(R.id.btnOk).setOnClickListener { DocStore.save(this, doc); showExportMenu(finishAfter = true) }
+        findViewById<View>(R.id.btnOk).setOnClickListener {
+            DocStore.save(this, doc)
+            autoSaveJpg { showExportMenu(finishAfter = true) }
+        }
 
         buildFilterRow()
         showPage()
+        // a fresh scan lands here: save its JPGs right away
+        if (savedInstanceState == null) autoSaveJpg(null)
+    }
+
+    /** Save new / edited pages to the gallery as JPG (no duplicates), then run [after]. */
+    private fun autoSaveJpg(after: (() -> Unit)?) {
+        if (doc.pages.all { it.savedUri != null && it.savedKey == it.renderKey() }) { after?.invoke(); return }
+        lifecycleScope.launch {
+            val n = try {
+                withContext(worker) {
+                    val written = Exporter.syncJpgs(this@EditActivity, doc)
+                    DocStore.save(this@EditActivity, doc)
+                    written
+                }
+            } catch (e: Throwable) {
+                Toast.makeText(this@EditActivity, "บันทึก JPG อัตโนมัติไม่สำเร็จ: ${e.message}", Toast.LENGTH_LONG).show()
+                -1
+            }
+            if (n > 0) Toast.makeText(this@EditActivity, "บันทึก JPG ลงแกลเลอรีแล้ว $n รูป (Pictures/JAMES Scan)", Toast.LENGTH_SHORT).show()
+            after?.invoke()
+        }
     }
 
     override fun onSaveInstanceState(outState: Bundle) {
@@ -244,16 +270,15 @@ class EditActivity : AppCompatActivity() {
     }
 
     private fun showExportMenu(finishAfter: Boolean) {
-        val items = arrayOf("บันทึกเป็น PDF ลงเครื่อง", "บันทึกเป็นรูป JPG ลงแกลเลอรี", "แชร์ PDF", "แชร์รูปภาพ", "เสร็จสิ้น")
+        val items = arrayOf("บันทึกเป็น PDF ลงเครื่อง", "แชร์ PDF", "แชร์รูปภาพ", "เสร็จสิ้น")
         MaterialAlertDialogBuilder(this)
-            .setTitle("บันทึกแล้ว · ${doc.pages.size} หน้า")
+            .setTitle("บันทึก JPG แล้ว · ${doc.pages.size} หน้า")
             .setItems(items) { _, which ->
                 when (which) {
                     0 -> runExport { "บันทึก PDF แล้ว: " + Exporter.savePdf(this, doc) }
-                    1 -> runExport { "บันทึกรูปลงแกลเลอรีแล้ว ${Exporter.saveJpgs(this, doc)} รูป (Pictures/JAMES Scan)" }
-                    2 -> runShare { Exporter.pdfShareIntent(this, doc) }
-                    3 -> runShare { Exporter.imagesShareIntent(this, doc) }
-                    4 -> if (finishAfter) finish()
+                    1 -> runShare { Exporter.pdfShareIntent(this, doc) }
+                    2 -> runShare { Exporter.imagesShareIntent(this, doc) }
+                    3 -> if (finishAfter) finish()
                 }
             }.show()
     }

@@ -312,6 +312,7 @@ class CameraActivity : AppCompatActivity() {
         val d = ensureDoc()
         if (replaceIndex >= 0 && replaceIndex < d.pages.size) {
             page.filter = d.pages[replaceIndex].filter
+            page.savedUri = d.pages[replaceIndex].savedUri  // overwrite the old gallery JPG
             d.pages[replaceIndex] = page
             DocStore.save(this, d)
             setResult(RESULT_OK)
@@ -360,7 +361,10 @@ class CameraActivity : AppCompatActivity() {
                 return@launch
             }
             if (replaceIndex >= 0 && replaceIndex < d.pages.size) {
-                d.pages[replaceIndex] = pages[0].also { it.filter = d.pages[replaceIndex].filter }
+                d.pages[replaceIndex] = pages[0].also {
+                    it.filter = d.pages[replaceIndex].filter
+                    it.savedUri = d.pages[replaceIndex].savedUri
+                }
             } else d.pages.addAll(pages)
             DocStore.save(this@CameraActivity, d)
             addedThisSession += pages.size

@@ -67,6 +67,63 @@ object Exporter {
         return f.absolutePath
     }
 
+    /**
+     * Auto-save: write every page that is new or was edited since its last save
+     * into Pictures/JAMES Scan. An edited page overwrites its earlier JPG instead
+     * of adding a duplicate. Returns how many files were written.
+     */
+    fun syncJpgs(ctx: Context, doc: Doc): Int {
+        val dir = DocStore.dir(ctx, doc.id)
+        val base = safeName(doc.title)
+        var n = 0
+        doc.pages.forEachIndexed { i, p ->
+            val rk = p.renderKey()
+            if (p.savedUri != null && p.savedKey == rk) return@forEachIndexed
+            val bmp = Scanner.render(p, dir, EXPORT_SIDE)
+            val name = "${base}_${i + 1}_${System.currentTimeMillis() % 100000}.jpg"
+            var written = false
+            val old = p.savedUri
+            if (old != null) {
+                written = try {
+                    if (Build.VERSION.SDK_INT >= 29) {
+                        ctx.contentResolver.openOutputStream(Uri.parse(old), "wt")?.use {
+                            bmp.compress(Bitmap.CompressFormat.JPEG, 92, it)
+                        } != null
+                    } else {
+                        val f = File(old)
+                        f.exists() && FileOutputStream(f).use { bmp.compress(Bitmap.CompressFormat.JPEG, 92, it) }
+                    }
+                } catch (e: Exception) { false }  // file deleted by the user, or app reinstalled
+            }
+            if (!written) {
+                if (Build.VERSION.SDK_INT >= 29) {
+                    val values = ContentValues().apply {
+                        put(MediaStore.MediaColumns.DISPLAY_NAME, name)
+                        put(MediaStore.MediaColumns.MIME_TYPE, "image/jpeg")
+                        put(MediaStore.MediaColumns.RELATIVE_PATH, Environment.DIRECTORY_PICTURES + "/" + FOLDER)
+                    }
+                    val uri = ctx.contentResolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values)
+                    if (uri != null) {
+                        ctx.contentResolver.openOutputStream(uri)?.use { bmp.compress(Bitmap.CompressFormat.JPEG, 92, it) }
+                        p.savedUri = uri.toString()
+                        written = true
+                    }
+                } else {
+                    @Suppress("DEPRECATION")
+                    val d = File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), FOLDER).apply { mkdirs() }
+                    val f = File(d, name)
+                    FileOutputStream(f).use { bmp.compress(Bitmap.CompressFormat.JPEG, 92, it) }
+                    android.media.MediaScannerConnection.scanFile(ctx, arrayOf(f.absolutePath), arrayOf("image/jpeg"), null)
+                    p.savedUri = f.absolutePath
+                    written = true
+                }
+            }
+            bmp.recycle()
+            if (written) { p.savedKey = rk; n++ }
+        }
+        return n
+    }
+
     /** Save every page as JPG into Pictures/JAMES Scan. */
     fun saveJpgs(ctx: Context, doc: Doc): Int {
         val dir = DocStore.dir(ctx, doc.id)

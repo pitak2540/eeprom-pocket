@@ -27,20 +27,31 @@ class Page(
     var filter: String = Filters.ENHANCE,
     var rotation: Int = 0
 ) {
+    /** gallery JPG this page was auto-saved to (content:// uri, or a file path below Android 10) */
+    var savedUri: String? = null
+    /** render key at the time of that save; differs when the page was edited afterwards */
+    var savedKey: String? = null
+
     fun key() = "$src|${quad?.joinToString(",")}|$rotation"
+    fun renderKey() = key() + "|" + filter
 
     fun toJson() = JSONObject().apply {
         put("src", src)
         quad?.let { q -> put("quad", JSONArray().apply { q.forEach { put(it.toDouble()) } }) }
         put("filter", filter)
         put("rotation", rotation)
+        savedUri?.let { put("savedUri", it) }
+        savedKey?.let { put("savedKey", it) }
     }
 
     companion object {
         fun fromJson(o: JSONObject): Page {
             val qa = o.optJSONArray("quad")
             val q = if (qa != null && qa.length() == 8) FloatArray(8) { qa.getDouble(it).toFloat() } else null
-            return Page(o.getString("src"), q, o.optString("filter", Filters.ENHANCE), o.optInt("rotation", 0))
+            return Page(o.getString("src"), q, o.optString("filter", Filters.ENHANCE), o.optInt("rotation", 0)).apply {
+                savedUri = if (o.has("savedUri")) o.getString("savedUri") else null
+                savedKey = if (o.has("savedKey")) o.getString("savedKey") else null
+            }
         }
     }
 }
