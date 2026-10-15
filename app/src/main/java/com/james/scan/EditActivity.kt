@@ -154,7 +154,6 @@ class EditActivity : AppCompatActivity() {
             v.setOnLongClickListener {
                 doc.pages.forEach { it.filter = f }
                 DocStore.save(this, doc)
-                DocStore.setDefaultFilter(this, f)
                 Toast.makeText(this, "ใช้ \"${Filters.label(f)}\" กับทุกหน้าแล้ว", Toast.LENGTH_SHORT).show()
                 showPage()
                 true
@@ -169,7 +168,6 @@ class EditActivity : AppCompatActivity() {
         if (p.filter == f) return
         p.filter = f
         DocStore.save(this, doc)
-        DocStore.setDefaultFilter(this, f)
         showPage()
     }
 

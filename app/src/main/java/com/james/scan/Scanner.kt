@@ -31,7 +31,7 @@ object Filters {
     const val GRAY = "gray"
     const val BW = "bw"
 
-    val ALL = listOf(ORIGINAL, ENHANCE, MAGIC, NOSHADOW, GRAY, BW)
+    val ALL = listOf(NOSHADOW, ORIGINAL, ENHANCE, MAGIC, GRAY, BW)
 
     fun label(f: String) = when (f) {
         ORIGINAL -> "ต้นฉบับ"

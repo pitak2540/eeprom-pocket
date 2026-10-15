@@ -350,7 +350,7 @@ class CameraActivity : AppCompatActivity() {
                         Scanner.saveJpeg(bmp, f)
                         val q = if (preCropped) null else Scanner.detect(bmp)
                         bmp.recycle()
-                        Page(f.name, q, if (preCropped) Filters.ORIGINAL else def)
+                        Page(f.name, q, def)
                     } catch (e: Throwable) { null }
                 }
             }

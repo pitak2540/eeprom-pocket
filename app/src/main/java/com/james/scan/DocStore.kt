@@ -24,7 +24,7 @@ class App : Application() {
 class Page(
     var src: String,
     var quad: FloatArray?,
-    var filter: String = Filters.ENHANCE,
+    var filter: String = Filters.NOSHADOW,
     var rotation: Int = 0
 ) {
     /** gallery JPG this page was auto-saved to (content:// uri, or a file path below Android 10) */
@@ -48,7 +48,7 @@ class Page(
         fun fromJson(o: JSONObject): Page {
             val qa = o.optJSONArray("quad")
             val q = if (qa != null && qa.length() == 8) FloatArray(8) { qa.getDouble(it).toFloat() } else null
-            return Page(o.getString("src"), q, o.optString("filter", Filters.ENHANCE), o.optInt("rotation", 0)).apply {
+            return Page(o.getString("src"), q, o.optString("filter", Filters.NOSHADOW), o.optInt("rotation", 0)).apply {
                 savedUri = if (o.has("savedUri")) o.getString("savedUri") else null
                 savedKey = if (o.has("savedKey")) o.getString("savedKey") else null
             }
@@ -116,8 +116,9 @@ object DocStore {
         }
     }
 
-    fun defaultFilter(ctx: Context): String =
-        ctx.getSharedPreferences("prefs", 0).getString(TAG_DEFAULT_FILTER, Filters.ENHANCE) ?: Filters.ENHANCE
+    /** every new scan starts with "ลบเงา" (remove shadow) */
+    @Suppress("UNUSED_PARAMETER")
+    fun defaultFilter(ctx: Context): String = Filters.NOSHADOW
 
     fun setDefaultFilter(ctx: Context, f: String) {
         ctx.getSharedPreferences("prefs", 0).edit().putString(TAG_DEFAULT_FILTER, f).apply()
