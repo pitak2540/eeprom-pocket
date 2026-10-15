@@ -146,93 +146,212 @@ object Scanner {
         return r
     }
 
+    /**
+     * Candidate quads come from two sources: closed outlines (contours) and
+     * combinations of straight lines (Hough). Each candidate is scored by how
+     * consistently one side of each edge is brighter/darker than the other
+     * (real paper edges are consistent, keyboard keys / text lines are not).
+     */
     private fun detectMat(rgba: Mat): FloatArray? {
         val w = rgba.cols().toDouble()
         val h = rgba.rows().toDouble()
-        val scale = min(1.0, 500.0 / max(w, h))
+        val scale = min(1.0, 400.0 / max(w, h))
         val small = Mat()
         Imgproc.resize(rgba, small, Size(w * scale, h * scale), 0.0, 0.0, Imgproc.INTER_AREA)
         val gray = Mat()
         Imgproc.cvtColor(small, gray, Imgproc.COLOR_RGBA2GRAY)
+        small.release()
         Imgproc.GaussianBlur(gray, gray, Size(5.0, 5.0), 0.0)
 
-        val sw = small.cols().toDouble()
-        val sh = small.rows().toDouble()
-        val area = sw * sh
+        val sw = gray.cols(); val sh = gray.rows()
+        val px = ByteArray(sw * sh)
+        gray.get(0, 0, px)
+        val img = GrayImg(px, sw, sh)
+        val area = sw.toDouble() * sh
         val kernel = Imgproc.getStructuringElement(Imgproc.MORPH_RECT, Size(3.0, 3.0))
 
-        var found: List<Point>? = null
-
-        // pass 1 + 2: edges with two sensitivities
-        for ((lo, hi) in listOf(50.0 to 150.0, 20.0 to 70.0)) {
-            val edges = Mat()
+        val cands = ArrayList<List<Point>>()
+        val edges = Mat()
+        for ((lo, hi) in listOf(50.0 to 150.0, 25.0 to 80.0)) {
             Imgproc.Canny(gray, edges, lo, hi)
-            Imgproc.dilate(edges, edges, kernel, Point(-1.0, -1.0), 2)
-            found = findQuad(edges, area)
-            edges.release()
-            if (found != null) break
+            collectContourQuads(edges, area, cands)
+            val dil = Mat()
+            Imgproc.dilate(edges, dil, kernel, Point(-1.0, -1.0), 2)
+            collectContourQuads(dil, area, cands)
+            dil.release()
         }
-        // pass 3: Otsu threshold (bright paper on darker desk)
-        if (found == null) {
-            val th = Mat()
-            Imgproc.threshold(gray, th, 0.0, 255.0, Imgproc.THRESH_BINARY + Imgproc.THRESH_OTSU)
-            Imgproc.morphologyEx(th, th, Imgproc.MORPH_CLOSE, kernel, Point(-1.0, -1.0), 3)
-            found = findQuad(th, area)
-            th.release()
+        val th = Mat()
+        Imgproc.threshold(gray, th, 0.0, 255.0, Imgproc.THRESH_BINARY + Imgproc.THRESH_OTSU)
+        Imgproc.morphologyEx(th, th, Imgproc.MORPH_CLOSE, kernel, Point(-1.0, -1.0), 3)
+        collectContourQuads(th, area, cands)
+        th.release()
+
+        Imgproc.Canny(gray, edges, 30.0, 90.0)
+        collectLineQuads(edges, img, area, cands)
+        edges.release(); gray.release(); kernel.release()
+
+        var best: List<Point>? = null
+        var bestScore = 0.0
+        for (c in cands) {
+            val s = score(c, img, area)
+            if (s > bestScore) { bestScore = s; best = c }
         }
-        small.release(); gray.release(); kernel.release()
-        val q = found ?: return null
-        val o = order(q)
+        val o = best ?: return null
+        if (bestScore < 0.06) return null
+        val sx = sw.toDouble(); val sy = sh.toDouble()
         return floatArrayOf(
-            (o[0].x / sw).toFloat(), (o[0].y / sh).toFloat(),
-            (o[1].x / sw).toFloat(), (o[1].y / sh).toFloat(),
-            (o[2].x / sw).toFloat(), (o[2].y / sh).toFloat(),
-            (o[3].x / sw).toFloat(), (o[3].y / sh).toFloat()
+            (o[0].x / sx).toFloat(), (o[0].y / sy).toFloat(),
+            (o[1].x / sx).toFloat(), (o[1].y / sy).toFloat(),
+            (o[2].x / sx).toFloat(), (o[2].y / sy).toFloat(),
+            (o[3].x / sx).toFloat(), (o[3].y / sy).toFloat()
         ).map { it.coerceIn(0f, 1f) }.toFloatArray()
     }
 
-    private fun findQuad(bin: Mat, imgArea: Double): List<Point>? {
+    private class GrayImg(val px: ByteArray, val w: Int, val h: Int) {
+        fun at(x: Int, y: Int) = px[y * w + x].toInt() and 0xFF
+    }
+
+    private const val OFF = 3.0
+    private const val CONTRAST = 10
+
+    /** fraction of samples along a->b where one side is consistently brighter. -1 = mostly outside frame */
+    private fun edgeConsistency(a: Point, b: Point, outX: Double, outY: Double, img: GrayImg, fromCentre: Boolean): Double {
+        val dx = b.x - a.x; val dy = b.y - a.y
+        val len = hypot(dx, dy)
+        if (len < 1) return 0.0
+        var nx = -dy / len; var ny = dx / len
+        if (fromCentre) {
+            val mx = (a.x + b.x) / 2; val my = (a.y + b.y) / 2
+            if ((mx - outX) * nx + (my - outY) * ny < 0) { nx = -nx; ny = -ny }
+        }
+        val n = (len / 3).toInt() + 2
+        var pos = 0; var neg = 0; var cnt = 0
+        for (k in 0 until n) {
+            val t = if (fromCentre) 0.05 + 0.9 * k / (n - 1) else k.toDouble() / (n - 1)
+            val x = a.x + dx * t; val y = a.y + dy * t
+            val xo = (x + nx * OFF).toInt(); val yo = (y + ny * OFF).toInt()
+            val xi = (x - nx * OFF).toInt(); val yi = (y - ny * OFF).toInt()
+            if (xi < 0 || yi < 0 || xi >= img.w || yi >= img.h || xo < 0 || yo < 0 || xo >= img.w || yo >= img.h) continue
+            cnt++
+            val v = img.at(xi, yi) - img.at(xo, yo)
+            if (v > CONTRAST) pos++ else if (v < -CONTRAST) neg++
+        }
+        if (fromCentre && cnt < n * 0.4) return -1.0
+        return max(pos, neg).toDouble() / max(cnt, 1)
+    }
+
+    private fun score(q: List<Point>, img: GrayImg, area: Double): Double {
+        val a = quadArea(q)
+        if (a < area * 0.12 || !sane(q)) return 0.0
+        val cx = q.sumOf { it.x } / 4; val cy = q.sumOf { it.y } / 4
+        val known = ArrayList<Double>()
+        for (i in 0 until 4) {
+            val s = edgeConsistency(q[i], q[(i + 1) % 4], cx, cy, img, true)
+            if (s >= 0) known.add(s)
+        }
+        if (known.size < 3) return 0.0
+        known.sort()
+        if (known[0] < 0.25 || known[1] < 0.5) return 0.0 // allow at most one weak side
+        val mean = known.average()
+        return mean * mean * mean * mean * Math.pow(a / area, 0.25)
+    }
+
+    private fun quadArea(q: List<Point>): Double {
+        var s = 0.0
+        for (i in 0 until 4) { val p = q[i]; val n = q[(i + 1) % 4]; s += p.x * n.y - n.x * p.y }
+        return abs(s) / 2
+    }
+
+    private fun collectContourQuads(bin: Mat, imgArea: Double, out: MutableList<List<Point>>) {
         val contours = ArrayList<MatOfPoint>()
         val hier = Mat()
         Imgproc.findContours(bin, contours, hier, Imgproc.RETR_LIST, Imgproc.CHAIN_APPROX_SIMPLE)
         hier.release()
-        val sorted = contours.map { it to Imgproc.contourArea(it) }
-            .filter { it.second > imgArea * 0.12 }
-            .sortedByDescending { it.second }
-            .take(8)
-        var result: List<Point>? = null
-        for ((c, _) in sorted) {
-            // convex hull makes it robust against pens / fingers crossing the edge
+        for (c in contours) {
+            val pts = c.toArray()
             val hullIdx = MatOfInt()
             Imgproc.convexHull(c, hullIdx)
-            val pts = c.toArray()
             val hullPts = hullIdx.toArray().map { pts[it] }
             hullIdx.release()
             if (hullPts.size < 4) continue
-            val hull2f = MatOfPoint2f(*hullPts.toTypedArray())
-            val peri = Imgproc.arcLength(hull2f, true)
-            for (eps in listOf(0.02, 0.03, 0.04, 0.06, 0.08)) {
-                val approx = MatOfPoint2f()
-                Imgproc.approxPolyDP(hull2f, approx, eps * peri, true)
-                val ap = approx.toArray()
-                approx.release()
-                if (ap.size == 4) {
-                    val mp = MatOfPoint(*ap)
-                    val a = Imgproc.contourArea(mp)
-                    val convex = Imgproc.isContourConvex(mp)
-                    mp.release()
-                    if (convex && a > imgArea * 0.12 && sane(order(ap.toList()))) {
-                        result = ap.toList()
+            val hullMat = MatOfPoint(*hullPts.toTypedArray())
+            val hullArea = Imgproc.contourArea(hullMat)
+            hullMat.release()
+            if (hullArea < imgArea * 0.1) continue
+            for (src in listOf(pts.toList(), hullPts)) {
+                if (src.size < 4) continue
+                val m2f = MatOfPoint2f(*src.toTypedArray())
+                val peri = Imgproc.arcLength(m2f, true)
+                for (eps in listOf(0.015, 0.02, 0.03, 0.04, 0.06, 0.08)) {
+                    val approx = MatOfPoint2f()
+                    Imgproc.approxPolyDP(m2f, approx, eps * peri, true)
+                    val ap = approx.toArray()
+                    approx.release()
+                    if (ap.size == 4) {
+                        val mp = MatOfPoint(*ap)
+                        if (Imgproc.isContourConvex(mp)) out.add(order(ap.toList()))
+                        mp.release()
+                        break
                     }
-                    break
+                    if (ap.size < 4) break
                 }
-                if (ap.size < 4) break
+                m2f.release()
             }
-            hull2f.release()
-            if (result != null) break
         }
         contours.forEach { it.release() }
-        return result
+    }
+
+    private fun collectLineQuads(edges: Mat, img: GrayImg, area: Double, out: MutableList<List<Point>>) {
+        val lines = Mat()
+        val minLen = min(img.w, img.h) * 0.12
+        Imgproc.HoughLinesP(edges, lines, 1.0, Math.PI / 180, 30, minLen, 15.0)
+        val hs = ArrayList<Pair<Double, DoubleArray>>()
+        val vs = ArrayList<Pair<Double, DoubleArray>>()
+        val buf = DoubleArray(4)
+        for (r in 0 until lines.rows()) {
+            lines.get(r, 0, buf)
+            val l = buf.copyOf()
+            val ang = (Math.toDegrees(kotlin.math.atan2(l[3] - l[1], l[2] - l[0])) + 180) % 180
+            val len = hypot(l[2] - l[0], l[3] - l[1])
+            val cons = edgeConsistency(Point(l[0], l[1]), Point(l[2], l[3]), 0.0, 0.0, img, false)
+            val rank = len * cons * cons
+            if (ang < 30 || ang > 150) hs.add(rank to l) else if (ang > 60 && ang < 120) vs.add(rank to l)
+        }
+        lines.release()
+        val H = dedupe(hs, true); val V = dedupe(vs, false)
+        val w = img.w.toDouble(); val h = img.h.toDouble()
+        for (i in H.indices) for (j in i + 1 until H.size) for (a in V.indices) for (b in a + 1 until V.size) {
+            val p = listOf(
+                intersect(H[i], V[a]), intersect(H[i], V[b]),
+                intersect(H[j], V[a]), intersect(H[j], V[b])
+            )
+            if (p.any { it == null }) continue
+            val pts = p.filterNotNull()
+            if (pts.any { it.x < -w * 0.03 || it.y < -h * 0.03 || it.x > w * 1.03 || it.y > h * 1.03 }) continue
+            val o = order(pts).map { Point(it.x.coerceIn(0.0, w - 1), it.y.coerceIn(0.0, h - 1)) }
+            if (quadArea(o) < area * 0.15) continue
+            out.add(o)
+        }
+    }
+
+    private fun dedupe(ls: List<Pair<Double, DoubleArray>>, horiz: Boolean): List<DoubleArray> {
+        val keys = ArrayList<Double>()
+        val res = ArrayList<DoubleArray>()
+        for ((_, l) in ls.sortedByDescending { it.first }) {
+            val key = if (horiz) (l[1] + l[3]) / 2 else (l[0] + l[2]) / 2
+            if (keys.all { abs(it - key) > 6 }) { keys.add(key); res.add(l) }
+            if (res.size >= 12) break
+        }
+        return res
+    }
+
+    private fun intersect(l1: DoubleArray, l2: DoubleArray): Point? {
+        val (x1, y1, x2, y2) = l1.toList()
+        val (x3, y3, x4, y4) = l2.toList()
+        val d = (x1 - x2) * (y3 - y4) - (y1 - y2) * (x3 - x4)
+        if (abs(d) < 1e-6) return null
+        val a = x1 * y2 - y1 * x2; val b = x3 * y4 - y3 * x4
+        return Point((a * (x3 - x4) - (x1 - x2) * b) / d, (a * (y3 - y4) - (y1 - y2) * b) / d)
     }
 
     /** reject very skewed quads (angles too sharp) */
@@ -242,7 +361,7 @@ object Scanner {
             val v1x = a.x - b.x; val v1y = a.y - b.y
             val v2x = c.x - b.x; val v2y = c.y - b.y
             val cos = (v1x * v2x + v1y * v2y) / (hypot(v1x, v1y) * hypot(v2x, v2y) + 1e-6)
-            if (abs(cos) > 0.6) return false // outside ~53°..127°
+            if (abs(cos) > 0.5) return false // outside 60°..120°
         }
         return true
     }

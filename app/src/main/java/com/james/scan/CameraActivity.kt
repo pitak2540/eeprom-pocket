@@ -12,6 +12,7 @@ import android.widget.ImageView
 import android.widget.ProgressBar
 import android.widget.TextView
 import android.widget.Toast
+import androidx.activity.result.IntentSenderRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.camera.core.AspectRatio
@@ -29,6 +30,9 @@ import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import com.google.mlkit.vision.documentscanner.GmsDocumentScannerOptions
+import com.google.mlkit.vision.documentscanner.GmsDocumentScanning
+import com.google.mlkit.vision.documentscanner.GmsDocumentScanningResult
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 
@@ -77,7 +81,30 @@ class CameraActivity : AppCompatActivity() {
     }
 
     private val importLauncher = registerForActivityResult(ActivityResultContracts.GetMultipleContents()) { uris ->
-        if (uris.isNotEmpty()) importImages(uris)
+        if (uris.isNotEmpty()) importImages(uris, preCropped = false)
+    }
+
+    private val aiLauncher = registerForActivityResult(ActivityResultContracts.StartIntentSenderForResult()) { res ->
+        if (res.resultCode == RESULT_OK) {
+            val r = GmsDocumentScanningResult.fromActivityResultIntent(res.data)
+            val uris = r?.pages?.map { it.imageUri } ?: emptyList()
+            if (uris.isNotEmpty()) importImages(uris, preCropped = true)
+        }
+    }
+
+    /** Google ML Kit document scanner: ML edge detection, best for cluttered desks. */
+    private fun startAiScan() {
+        val opts = GmsDocumentScannerOptions.Builder()
+            .setGalleryImportAllowed(true)
+            .setPageLimit(if (replaceIndex >= 0) 1 else 50)
+            .setResultFormats(GmsDocumentScannerOptions.RESULT_FORMAT_JPEG)
+            .setScannerMode(GmsDocumentScannerOptions.SCANNER_MODE_FULL)
+            .build()
+        GmsDocumentScanning.getClient(opts).getStartScanIntent(this)
+            .addOnSuccessListener { sender -> aiLauncher.launch(IntentSenderRequest.Builder(sender).build()) }
+            .addOnFailureListener { e ->
+                Toast.makeText(this, "AI สแกนใช้ไม่ได้ในเครื่องนี้ (ต้องมี Google Play): ${e.message}", Toast.LENGTH_LONG).show()
+            }
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -117,6 +144,7 @@ class CameraActivity : AppCompatActivity() {
         modeMulti.setOnClickListener { multi = true; updateUi() }
         btnDone.setOnClickListener { finishScan(cancel = false) }
         thumbBox.setOnClickListener { finishScan(cancel = false) }
+        findViewById<View>(R.id.btnAi).setOnClickListener { startAiScan() }
         findViewById<View>(R.id.btnImport).setOnClickListener { importLauncher.launch("image/*") }
         btnFlash.setOnClickListener {
             flashOn = !flashOn
@@ -297,7 +325,7 @@ class CameraActivity : AppCompatActivity() {
         updateUi()
     }
 
-    private fun importImages(uris: List<Uri>) {
+    private fun importImages(uris: List<Uri>, preCropped: Boolean) {
         busy.visibility = View.VISIBLE
         shutter.isEnabled = false
         lifecycleScope.launch {
@@ -309,9 +337,9 @@ class CameraActivity : AppCompatActivity() {
                         val bmp = Scanner.loadUri(this@CameraActivity, uri, MAX_SIDE)
                         val f = DocStore.newImageFile(this@CameraActivity, d)
                         Scanner.saveJpeg(bmp, f)
-                        val q = Scanner.detect(bmp)
+                        val q = if (preCropped) null else Scanner.detect(bmp)
                         bmp.recycle()
-                        Page(f.name, q, def)
+                        Page(f.name, q, if (preCropped) Filters.ORIGINAL else def)
                     } catch (e: Throwable) { null }
                 }
             }
