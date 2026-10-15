@@ -1,0 +1,37 @@
+name: JamesScan
+options:
+  bundleIdPrefix: com.james
+  deploymentTarget:
+    iOS: "16.0"
+targets:
+  JamesScan:
+    type: application
+    platform: iOS
+    sources:
+      - Sources
+      - Resources/Assets.xcassets
+    info:
+      path: Resources/Info.plist
+      properties:
+        CFBundleDisplayName: JAMES Scan
+        CFBundleShortVersionString: "1.0"
+        CFBundleVersion: "1"
+        NSCameraUsageDescription: ใช้กล้องเพื่อสแกนเอกสาร
+        NSPhotoLibraryAddUsageDescription: บันทึกเอกสารที่สแกนเป็นรูป JPG ลงในรูปภาพ
+        NSPhotoLibraryUsageDescription: เลือกรูปเอกสารเพื่อนำเข้า
+        UIFileSharingEnabled: true
+        LSSupportsOpeningDocumentsInPlace: true
+        UILaunchScreen: {}
+        UIUserInterfaceStyle: Dark
+        UISupportedInterfaceOrientations: [UIInterfaceOrientationPortrait]
+        UISupportedInterfaceOrientations~ipad: [UIInterfaceOrientationPortrait, UIInterfaceOrientationPortraitUpsideDown, UIInterfaceOrientationLandscapeLeft, UIInterfaceOrientationLandscapeRight]
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.james.scan
+        PRODUCT_NAME: JamesScan
+        MARKETING_VERSION: "1.0"
+        CURRENT_PROJECT_VERSION: "1"
+        SWIFT_VERSION: "5.0"
+        TARGETED_DEVICE_FAMILY: "1,2"
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        ENABLE_BITCODE: NO

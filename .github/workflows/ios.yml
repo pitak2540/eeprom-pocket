@@ -1,0 +1,46 @@
+name: Build iOS
+on:
+  push:
+    branches: [james-scan]
+    paths: ['ios/**', '.github/workflows/ios.yml']
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  build:
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install XcodeGen
+        run: brew install xcodegen
+      - name: Build
+        working-directory: ios
+        run: |
+          ls /Applications | grep Xcode || true
+          sudo xcode-select -s /Applications/Xcode_15.4.app || true
+          xcodebuild -version
+          xcodegen generate
+          set -o pipefail
+          xcodebuild -project JamesScan.xcodeproj -scheme JamesScan -configuration Release \
+            -sdk iphoneos -destination 'generic/platform=iOS' \
+            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" \
+            SYMROOT=$PWD/build build > ../build.log 2>&1 || true
+          grep -E "error:|BUILD (SUCCEEDED|FAILED)" ../build.log | sort -u > ../errors.log || true
+          tail -5 ../build.log
+          test -d build/Release-iphoneos/JamesScan.app
+      - name: Package IPA
+        run: |
+          mkdir -p /tmp/out/Payload
+          cp -R ios/build/Release-iphoneos/JamesScan.app /tmp/out/Payload/
+          cd /tmp/out && zip -qr JamesScan.ipa Payload && rm -rf Payload
+          cp $GITHUB_WORKSPACE/errors.log /tmp/out/
+          git init -q -b james-scan-ios && git add -A
+          git -c user.name=ci -c user.email=ci@local commit -qm "IPA ${GITHUB_SHA}"
+          git push -f "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${GITHUB_REPOSITORY}" james-scan-ios
+      - name: Publish log on failure
+        if: failure()
+        run: |
+          mkdir -p /tmp/log && cp errors.log build.log /tmp/log/ 2>/dev/null || echo none > /tmp/log/errors.log
+          cd /tmp/log && git init -q -b james-scan-ios-log && git add -A
+          git -c user.name=ci -c user.email=ci@local commit -qm "log ${GITHUB_SHA}"
+          git push -f "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${GITHUB_REPOSITORY}" james-scan-ios-log
