@@ -42,6 +42,10 @@ class CameraActivity : AppCompatActivity() {
         const val EXTRA_DOC = "doc"
         const val EXTRA_REPLACE = "replace"
         const val EXTRA_ADD = "add"
+        const val EXTRA_AI = "ai"
+
+        /** AI (Google ML Kit) edge detection is the default way to scan. */
+        fun aiEnabled(ctx: android.content.Context) = ctx.getSharedPreferences("prefs", 0).getBoolean("use_ai", true)
         const val MAX_SIDE = 3000
     }
 
@@ -73,6 +77,7 @@ class CameraActivity : AppCompatActivity() {
     private var capturing = false
     private var lastAutoShot = 0L
     private var addedThisSession = 0
+    private var aiMode = false
 
     private val permLauncher = registerForActivityResult(ActivityResultContracts.RequestPermission()) { ok ->
         if (ok) startCamera() else {
@@ -88,8 +93,9 @@ class CameraActivity : AppCompatActivity() {
         if (res.resultCode == RESULT_OK) {
             val r = GmsDocumentScanningResult.fromActivityResultIntent(res.data)
             val uris = r?.pages?.map { it.imageUri } ?: emptyList()
-            if (uris.isNotEmpty()) importImages(uris, preCropped = true)
+            if (uris.isNotEmpty()) { importImages(uris, preCropped = true); return@registerForActivityResult }
         }
+        if (aiMode) finishScan(cancel = true)
     }
 
     /** Google ML Kit document scanner: ML edge detection, best for cluttered desks. */
@@ -103,7 +109,8 @@ class CameraActivity : AppCompatActivity() {
         GmsDocumentScanning.getClient(opts).getStartScanIntent(this)
             .addOnSuccessListener { sender -> aiLauncher.launch(IntentSenderRequest.Builder(sender).build()) }
             .addOnFailureListener { e ->
-                Toast.makeText(this, "AI สแกนใช้ไม่ได้ในเครื่องนี้ (ต้องมี Google Play): ${e.message}", Toast.LENGTH_LONG).show()
+                Toast.makeText(this, "AI สแกนใช้ไม่ได้ในเครื่องนี้ ใช้กล้องของแอพแทน (${e.message})", Toast.LENGTH_LONG).show()
+                if (aiMode) { aiMode = false; startOwnCamera() }
             }
     }
 
@@ -136,7 +143,7 @@ class CameraActivity : AppCompatActivity() {
             modeSingle.visibility = View.GONE
             modeMulti.visibility = View.GONE
         }
-        autoOn = getSharedPreferences("prefs", 0).getBoolean("auto", false)
+        autoOn = getSharedPreferences("prefs", 0).getBoolean("auto", true)
 
         findViewById<View>(R.id.btnClose).setOnClickListener { finishScan(cancel = true) }
         shutter.setOnClickListener { capture() }
@@ -160,6 +167,12 @@ class CameraActivity : AppCompatActivity() {
         }
         updateUi()
 
+        aiMode = intent.getBooleanExtra(EXTRA_AI, false)
+        if (aiMode && savedInstanceState == null) startAiScan()
+        else if (!aiMode) startOwnCamera()
+    }
+
+    private fun startOwnCamera() {
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED) {
             startCamera()
         } else permLauncher.launch(Manifest.permission.CAMERA)
@@ -312,11 +325,8 @@ class CameraActivity : AppCompatActivity() {
             if (addMode) {
                 setResult(RESULT_OK); finish()
             } else {
-                // single page: adjust the crop first, then go to the editor
-                startActivity(Intent(this, CropActivity::class.java)
-                    .putExtra(CropActivity.EXTRA_DOC, d.id)
-                    .putExtra(CropActivity.EXTRA_INDEX, d.pages.size - 1)
-                    .putExtra(CropActivity.EXTRA_THEN_EDIT, true))
+                // single page: auto-cropped, straight to the editor
+                startActivity(Intent(this, EditActivity::class.java).putExtra(EditActivity.EXTRA_DOC, d.id))
                 finish()
             }
             return

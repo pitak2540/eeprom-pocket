@@ -37,6 +37,11 @@
             android:contentDescription="นำเข้าภาพ" android:src="@drawable/ic_image" app:fabSize="mini"
             app:backgroundTint="@color/surface2" app:tint="#FFFFFF"
             xmlns:app="http://schemas.android.com/apk/res-auto" />
+        <com.google.android.material.floatingactionbutton.FloatingActionButton android:id="@+id/btnCamera"
+            android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginEnd="16dp"
+            android:contentDescription="กล้องในแอพ" android:src="@drawable/ic_camera" app:fabSize="mini"
+            app:backgroundTint="@color/surface2" app:tint="#FFFFFF"
+            xmlns:app="http://schemas.android.com/apk/res-auto" />
         <com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton android:id="@+id/btnScan"
             android:layout_width="wrap_content" android:layout_height="wrap_content"
             android:text="สแกน" android:textColor="#FFFFFF" android:textSize="17sp" android:textStyle="bold"

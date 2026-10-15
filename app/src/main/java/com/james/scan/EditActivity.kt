@@ -79,13 +79,15 @@ class EditActivity : AppCompatActivity() {
         findViewById<View>(R.id.btnBack).setOnClickListener { finish() }
         findViewById<View>(R.id.btnAdd).setOnClickListener {
             addPages.launch(Intent(this, CameraActivity::class.java)
-                .putExtra(CameraActivity.EXTRA_DOC, doc.id).putExtra(CameraActivity.EXTRA_ADD, true))
+                .putExtra(CameraActivity.EXTRA_DOC, doc.id).putExtra(CameraActivity.EXTRA_ADD, true)
+                .putExtra(CameraActivity.EXTRA_AI, CameraActivity.aiEnabled(this)))
         }
         findViewById<ImageButton>(R.id.btnPrev).setOnClickListener { if (index > 0) { index--; showPage() } }
         findViewById<ImageButton>(R.id.btnNext).setOnClickListener { if (index < doc.pages.size - 1) { index++; showPage() } }
         findViewById<View>(R.id.btnRetake).setOnClickListener {
             reload.launch(Intent(this, CameraActivity::class.java)
-                .putExtra(CameraActivity.EXTRA_DOC, doc.id).putExtra(CameraActivity.EXTRA_REPLACE, index))
+                .putExtra(CameraActivity.EXTRA_DOC, doc.id).putExtra(CameraActivity.EXTRA_REPLACE, index)
+                .putExtra(CameraActivity.EXTRA_AI, CameraActivity.aiEnabled(this)))
         }
         findViewById<View>(R.id.btnRotate).setOnClickListener {
             val p = doc.pages[index]

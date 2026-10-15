@@ -71,6 +71,9 @@ class MainActivity : AppCompatActivity() {
         list.layoutManager = GridLayoutManager(this, 2)
         list.adapter = adapter
         findViewById<View>(R.id.btnScan).setOnClickListener {
+            startActivity(Intent(this, CameraActivity::class.java).putExtra(CameraActivity.EXTRA_AI, CameraActivity.aiEnabled(this)))
+        }
+        findViewById<View>(R.id.btnCamera).setOnClickListener {
             startActivity(Intent(this, CameraActivity::class.java))
         }
         findViewById<View>(R.id.btnImport).setOnClickListener { importLauncher.launch("image/*") }
