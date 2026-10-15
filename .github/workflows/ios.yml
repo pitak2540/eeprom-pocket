@@ -8,7 +8,7 @@ permissions:
   contents: write
 jobs:
   build:
-    runs-on: macos-14
+    runs-on: macos-15
     steps:
       - uses: actions/checkout@v4
       - name: Install XcodeGen
@@ -17,7 +17,7 @@ jobs:
         working-directory: ios
         run: |
           ls /Applications | grep Xcode || true
-          sudo xcode-select -s /Applications/Xcode_15.4.app || true
+          X=$(ls -d /Applications/Xcode_16*.app | sort -V | tail -1); echo "using $X"; sudo xcode-select -s "$X"
           xcodebuild -version
           xcodegen generate
           set -o pipefail
