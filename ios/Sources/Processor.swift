@@ -189,7 +189,11 @@ enum Processor {
     static func magic(_ cg: CGImage) -> CGImage {
         var p = noShadowPixels(cg)
         // levels: <=60 -> black, >=235 -> white
-        let lut: [UInt8] = (0..<256).map { v in UInt8(min(255, max(0, (v - 60) * 255 / 175))) }
+        var lut = [UInt8](repeating: 0, count: 256)
+        for v in 0..<256 {
+            let t: Int = (v - 60) * 255 / 175
+            lut[v] = UInt8(min(255, max(0, t)))
+        }
         let n = p.w * p.h * 4
         p.data.withUnsafeMutableBufferPointer { d in
             var i = 0
@@ -232,7 +236,10 @@ enum Processor {
         p.data.withUnsafeBufferPointer { d in
             for k in 0..<(p.w * p.h) {
                 let i = k * 4
-                g[k] = UInt8((Int(d[i]) * 299 + Int(d[i + 1]) * 587 + Int(d[i + 2]) * 114) / 1000)
+                let r: Int = Int(d[i]) * 299
+                let gg: Int = Int(d[i + 1]) * 587
+                let b: Int = Int(d[i + 2]) * 114
+                g[k] = UInt8((r + gg + b) / 1000)
             }
         }
         return (p.w, p.h, g)
@@ -269,10 +276,14 @@ enum Processor {
             let y0 = max(0, y - r), y1 = min(h - 1, y + r)
             for x in 0..<w {
                 let x0 = max(0, x - r), x1 = min(w - 1, x + r)
-                let sum = integ[(y1 + 1) * (w + 1) + x1 + 1] - integ[y0 * (w + 1) + x1 + 1]
-                    - integ[(y1 + 1) * (w + 1) + x0] + integ[y0 * (w + 1) + x0]
-                let cnt = (y1 - y0 + 1) * (x1 - x0 + 1)
-                out[y * w + x] = Int(g[y * w + x]) * cnt < sum - 12 * cnt ? 0 : 255
+                let rowA: Int = (y1 + 1) * (w + 1)
+                let rowB: Int = y0 * (w + 1)
+                let sA: Int = integ[rowA + x1 + 1] - integ[rowB + x1 + 1]
+                let sB: Int = integ[rowA + x0] - integ[rowB + x0]
+                let sum: Int = sA - sB
+                let cnt: Int = (y1 - y0 + 1) * (x1 - x0 + 1)
+                let v: Int = Int(g[y * w + x]) * cnt
+                out[y * w + x] = v < sum - 12 * cnt ? 0 : 255
             }
         }
         return fromGray(w, h, out) ?? cg

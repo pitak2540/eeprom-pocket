@@ -27,7 +27,7 @@ jobs:
             SYMROOT=$PWD/build build > ../build.log 2>&1 || true
           grep -E "error:|BUILD (SUCCEEDED|FAILED)" ../build.log | sort -u > ../errors.log || true
           tail -5 ../build.log
-          test -d build/Release-iphoneos/JamesScan.app
+          grep -q 'BUILD SUCCEEDED' ../build.log
       - name: Package IPA
         run: |
           mkdir -p /tmp/out/Payload
