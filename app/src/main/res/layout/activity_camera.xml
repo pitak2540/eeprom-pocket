@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent" android:layout_height="match_parent"
+    android:background="#000000" android:orientation="vertical">
+
+    <LinearLayout android:layout_width="match_parent" android:layout_height="64dp"
+        android:gravity="center_vertical" android:orientation="horizontal" android:paddingHorizontal="8dp">
+        <ImageButton android:id="@+id/btnClose" android:layout_width="48dp" android:layout_height="48dp"
+            android:background="?attr/selectableItemBackgroundBorderless" android:src="@drawable/ic_close"
+            android:contentDescription="ปิด" />
+        <View android:layout_width="0dp" android:layout_height="1dp" android:layout_weight="1" />
+        <ImageButton android:id="@+id/btnAuto" android:layout_width="48dp" android:layout_height="48dp"
+            android:background="?attr/selectableItemBackgroundBorderless" android:src="@drawable/ic_auto"
+            android:contentDescription="ถ่ายอัตโนมัติ" />
+        <ImageButton android:id="@+id/btnFlash" android:layout_width="48dp" android:layout_height="48dp"
+            android:background="?attr/selectableItemBackgroundBorderless" android:src="@drawable/ic_flash_off"
+            android:contentDescription="แฟลช" />
+    </LinearLayout>
+
+    <FrameLayout android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="1">
+        <androidx.camera.view.PreviewView android:id="@+id/preview"
+            android:layout_width="match_parent" android:layout_height="match_parent" />
+        <com.james.scan.QuadOverlayView android:id="@+id/overlay"
+            android:layout_width="match_parent" android:layout_height="match_parent" />
+        <TextView android:id="@+id/hint" android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:layout_gravity="top|center_horizontal" android:layout_marginTop="12dp"
+            android:background="@drawable/pill_bg" android:paddingHorizontal="14dp" android:paddingVertical="6dp"
+            android:textColor="#FFFFFF" android:textSize="13sp" android:text="วางเอกสารให้อยู่ในกรอบ" />
+        <LinearLayout android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:layout_gravity="bottom|center_horizontal" android:layout_marginBottom="12dp"
+            android:background="@drawable/pill_bg" android:orientation="horizontal" android:padding="4dp">
+            <TextView android:id="@+id/modeSingle" android:layout_width="wrap_content" android:layout_height="wrap_content"
+                android:paddingHorizontal="18dp" android:paddingVertical="8dp" android:text="หน้าเดียว"
+                android:textColor="#FFFFFF" android:textSize="15sp" android:textStyle="bold" />
+            <TextView android:id="@+id/modeMulti" android:layout_width="wrap_content" android:layout_height="wrap_content"
+                android:paddingHorizontal="18dp" android:paddingVertical="8dp" android:text="หลายหน้า"
+                android:textColor="#FFFFFF" android:textSize="15sp" android:textStyle="bold" />
+        </LinearLayout>
+        <View android:id="@+id/flashFx" android:layout_width="match_parent" android:layout_height="match_parent"
+            android:alpha="0" android:background="#FFFFFF" />
+    </FrameLayout>
+
+    <FrameLayout android:layout_width="match_parent" android:layout_height="150dp">
+        <FrameLayout android:id="@+id/thumbBox" android:layout_width="64dp" android:layout_height="64dp"
+            android:layout_gravity="center_vertical|start" android:layout_marginStart="28dp" android:visibility="invisible">
+            <ImageView android:id="@+id/thumb" android:layout_width="56dp" android:layout_height="56dp"
+                android:layout_gravity="bottom|start" android:background="#333333" android:scaleType="centerCrop" />
+            <TextView android:id="@+id/count" android:layout_width="24dp" android:layout_height="24dp"
+                android:layout_gravity="top|end" android:background="@drawable/badge" android:gravity="center"
+                android:textColor="#FFFFFF" android:textSize="12sp" android:textStyle="bold" />
+        </FrameLayout>
+        <ImageButton android:id="@+id/shutter" android:layout_width="84dp" android:layout_height="84dp"
+            android:layout_gravity="center" android:background="@drawable/shutter" android:contentDescription="ถ่าย" />
+        <ProgressBar android:id="@+id/busy" android:layout_width="40dp" android:layout_height="40dp"
+            android:layout_gravity="center" android:visibility="gone" />
+        <LinearLayout android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:layout_gravity="center_vertical|end" android:layout_marginEnd="20dp" android:gravity="center"
+            android:orientation="horizontal">
+            <TextView android:id="@+id/btnImport" android:layout_width="wrap_content" android:layout_height="wrap_content"
+                android:background="?attr/selectableItemBackgroundBorderless" android:drawableTop="@drawable/ic_image"
+                android:drawablePadding="4dp" android:gravity="center" android:padding="6dp"
+                android:text="นำเข้าภาพ" android:textColor="#FFFFFF" android:textSize="12sp" />
+            <TextView android:id="@+id/btnDone" android:layout_width="wrap_content" android:layout_height="wrap_content"
+                android:background="@drawable/btn_teal" android:drawableStart="@drawable/ic_check"
+                android:drawablePadding="4dp" android:gravity="center" android:paddingHorizontal="12dp"
+                android:paddingVertical="10dp" android:text="เสร็จ" android:textColor="#FFFFFF"
+                android:textStyle="bold" android:visibility="gone" />
+        </LinearLayout>
+    </FrameLayout>
+</LinearLayout>

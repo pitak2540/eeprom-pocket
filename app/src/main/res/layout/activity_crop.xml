@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent" android:layout_height="match_parent"
+    android:background="@color/bg" android:orientation="vertical">
+
+    <LinearLayout android:layout_width="match_parent" android:layout_height="56dp"
+        android:gravity="center_vertical" android:orientation="horizontal" android:paddingHorizontal="4dp">
+        <ImageButton android:id="@+id/btnBack" android:layout_width="48dp" android:layout_height="48dp"
+            android:background="?attr/selectableItemBackgroundBorderless" android:src="@drawable/ic_back"
+            android:contentDescription="กลับ" />
+        <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1"
+            android:paddingStart="8dp" android:text="ปรับขอบเอกสาร" android:textColor="@color/text"
+            android:textSize="18sp" android:textStyle="bold" />
+    </LinearLayout>
+
+    <FrameLayout android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="1">
+        <com.james.scan.CropView android:id="@+id/crop"
+            android:layout_width="match_parent" android:layout_height="match_parent" />
+        <ProgressBar android:id="@+id/busy" android:layout_width="48dp" android:layout_height="48dp"
+            android:layout_gravity="center" />
+    </FrameLayout>
+
+    <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:gravity="center" android:paddingVertical="6dp" android:text="ลากจุดที่มุมให้ตรงกับขอบกระดาษ"
+        android:textColor="@color/text_dim" android:textSize="13sp" />
+
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:background="@color/surface" android:gravity="center_vertical" android:orientation="horizontal"
+        android:paddingHorizontal="8dp" android:paddingVertical="6dp">
+        <TextView android:id="@+id/btnAuto" style="@style/ToolBtn" android:drawableTop="@drawable/ic_auto" android:text="ตรวจจับอัตโนมัติ" />
+        <TextView android:id="@+id/btnFull" style="@style/ToolBtn" android:drawableTop="@drawable/ic_fullscreen" android:text="ทั้งภาพ" />
+        <TextView android:id="@+id/btnOk" android:layout_width="0dp" android:layout_height="52dp"
+            android:layout_weight="1.2" android:layout_marginStart="8dp" android:background="@drawable/btn_teal"
+            android:drawableStart="@drawable/ic_check" android:drawablePadding="6dp" android:gravity="center"
+            android:paddingHorizontal="16dp" android:text="ถัดไป" android:textColor="#FFFFFF"
+            android:textSize="16sp" android:textStyle="bold" />
+    </LinearLayout>
+</LinearLayout>
